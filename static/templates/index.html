@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .carousel-item {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .carousel-image {
+            width: 50%;
+            object-fit: cover;
+            height: 100vh;
+        }
+
+        .carousel-fade .carousel-item {
+            opacity: 0;
+            transition-duration: 1s;
+            transition-property: opacity;
+        }
+
+        .carousel-fade .carousel-item.active,
+        .carousel-fade .carousel-item-next.carousel-item-left,
+        .carousel-fade .carousel-item-prev.carousel-item-right {
+            opacity: 1;
+        }
+
+        .carousel-fade .carousel-item-left,
+        .carousel-fade .carousel-item-right {
+            opacity: 0;
+        }
+
+        .carousel-fade .carousel-item-next,
+        .carousel-fade .carousel-item-prev,
+        .carousel-fade .carousel-item.active {
+            transform: translateX(0);
+            transition: none;
+        }
+
+        #search-container {
+            display: none;
+            /* Inicia oculto */
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+        }
+
+        #search-box {
+            width: 300px;
+            padding: 5px;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .result-item img {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .selected-photo {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 2000;
+            height: 100vh;
+            width: 100%;
+            background-color: rgba(0, 0, 0);
+            /* Adicione um fundo branco com alguma transparência */
+            text-align: center;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .selected-photo img {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            height: 100vh;
+        }
+
+        /* Estilo de destaque */
+        .highlighted {
+            background-color: lightgray;
+        }
+
+        #search-results {
+            max-height: 80vh;
+            /* Ou qualquer outra altura que seja um pouco menor que a altura da tela */
+            overflow-y: auto;
+            /* Isso permite a rolagem vertical se o conteúdo exceder a altura máxima */
+            width: 100%;
+            /* Ajuste a largura conforme necessário */
+            border: 1px solid #ddd;
+            /* Estilo opcional para melhor visualização */
+            border-radius: 5px;
+            /* Estilo opcional para bordas arredondadas */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            /* Estilo opcional para adicionar sombra */
+        }
+    </style>
+
+    <title>Carrossel de Imagens</title>
+    <link rel="icon" type="image/x-icon" href="./static/images/favicon.ico">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+
+<body>
+    <div id="carouselExampleIndicators" class="carousel slide carousel-fade" data-ride="carousel">
+        <div class="carousel-inner" id="carousel-images">
+            <!-- As imagens serão inseridas aqui pelo JavaScript -->
+        </div>
+    </div>
+
+    <div id="search-container">
+        <input type="text" id="search-box" name="unique-search-box" placeholder="Digite um nome..." autocomplete="off">
+        <div id="search-results"></div>
+    </div>
+
+    <div id="selected-photo" class="selected-photo"></div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.0/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script>
+        let searchTimer;
+        let dataImages = [
+            {
+                "name": "Angelina Jolie",
+                "photo_url": "./static/images/foto_1-1.jpg",
+                "slide_url": "./static/images/slide_1-1.jpg"
+            },
+            {
+                "name": "Anne Hathaway",
+                "photo_url": "./static/images/foto_2-1.jpg",
+                "slide_url": "./static/images/slide_2-1.jpg"
+            },
+            {
+                "name": "Catherine Zeta-Jones",
+                "photo_url": "./static/images/foto_16-1.jpg",
+                "slide_url": "./static/images/slide_16-1.jpg"
+            },
+            {
+                "name": "Dana Davis",
+                "photo_url": "./static/images/foto_5-1.jpg",
+                "slide_url": "./static/images/slide_5-1.jpg"
+            },
+            {
+                "name": "Danai Jekesay Gurira",
+                "photo_url": "./static/images/foto_17-1.jpg",
+                "slide_url": "./static/images/slide_17-1.jpg"
+            },
+            {
+                "name": "Dilraba Dilmurat",
+                "photo_url": "./static/images/foto_18-1.jpg",
+                "slide_url": "./static/images/slide_18-1.jpg"
+            },
+            {
+                "name": "Elizabeth Taylor",
+                "photo_url": "./static/images/foto_14-1.jpg",
+                "slide_url": "./static/images/slide_14-1.jpg"
+            },
+            {
+                "name": "Emma Stone",
+                "photo_url": "./static/images/foto_12-1.jpg",
+                "slide_url": "./static/images/slide_12-1.jpg"
+            },
+            {
+                "name": "Guli Nezha",
+                "photo_url": "./static/images/foto_19-1.jpg",
+                "slide_url": "./static/images/slide_19-1.jpg"
+            },
+            {
+                "name": "Halle Berry",
+                "photo_url": "./static/images/foto_15-1.jpg",
+                "slide_url": "./static/images/slide_15-1.jpg"
+            },
+            {
+                "name": "Jennifer Lawrence",
+                "photo_url": "./static/images/foto_7-1.jpg",
+                "slide_url": "./static/images/slide_7-1.jpg"
+            },
+            {
+                "name": "Jennifer Lynn Lopez",
+                "photo_url": "./static/images/foto_22-1.jpg",
+                "slide_url": "./static/images/slide_22-1.jpg"
+            },
+            {
+                "name": "Julia Roberts",
+                "photo_url": "./static/images/foto_9-1.jpg",
+                "slide_url": "./static/images/slide_9-1.jpg"
+            },
+            {
+                "name": "Lupita Nyong'o",
+                "photo_url": "./static/images/foto_10-1.jpg",
+                "slide_url": "./static/images/slide_10-1.jpg"
+            },
+            {
+                "name": "Margot Robbie",
+                "photo_url": "./static/images/foto_3-1.jpg",
+                "slide_url": "./static/images/slide_3-1.jpg"
+            },
+            {
+                "name": "Marilyn Monroe",
+                "photo_url": "./static/images/foto_8-1.jpg",
+                "slide_url": "./static/images/slide_8-1.jpg"
+            },
+            {
+                "name": "Meryl Streep",
+                "photo_url": "./static/images/foto_13-1.jpg",
+                "slide_url": "./static/images/slide_13-1.jpg"
+            },
+            {
+                "name": "Sandra Bullock",
+                "photo_url": "./static/images/foto_4-1.jpg",
+                "slide_url": "./static/images/slide_4-1.jpg"
+            },
+            {
+                "name": "Scarlett Johansson",
+                "photo_url": "./static/images/foto_6-1.jpg",
+                "slide_url": "./static/images/slide_6-1.jpg"
+            },
+            {
+                "name": "Shaunette Renee Wilson",
+                "photo_url": "./static/images/foto_11-1.jpg",
+                "slide_url": "./static/images/slide_11-1.jpg"
+            },
+            {
+                "name": "Victoria Song",
+                "photo_url": "./static/images/foto_21-1.jpg",
+                "slide_url": "./static/images/slide_21-1.jpg"
+            },
+            {
+                "name": "Yang Mi",
+                "photo_url": "./static/images/foto_20-1.jpg",
+                "slide_url": "./static/images/slide_20-1.jpg"
+            }
+        ];
+
+        $(document).ready(function () {
+            //fetch('/images').then(response => response.json()).then(images => {
+            //    dataImages = images;
+            // Inicializa o carrossel
+            $('.carousel').carousel({
+                interval: 3000
+            });
+
+            // Aqui você pode adicionar outras funções de inicialização.
+            // Por exemplo, a criação dinâmica dos elementos do carrossel.
+            const images = dataImages; // Supondo que 'dataImages' é a sua lista de imagens.
+            const carouselInner = document.getElementById('carousel-images');
+            for (let i = 0; i < images.length; i++) {
+                const item = document.createElement('div');
+                item.className = 'carousel-item' + (i === 0 ? ' active' : '');
+                const image = document.createElement('img');
+                image.className = 'carousel-image';
+                image.src = images[i].photo_url;
+                item.appendChild(image);
+                carouselInner.appendChild(item);
+            }
+            //});
+        });
+
+
+        // Função para mostrar a caixa de busca e iniciar o temporizador
+        function showSearchContainer() {
+            const searchContainer = document.getElementById('search-container');
+            searchContainer.style.display = 'block';
+
+            // Limpa o temporizador atual (se houver) e inicia um novo temporizador de 5 segundos
+            clearTimeout(searchTimer);
+            // Inicia o temporizador de 5 segundos
+            searchTimer = setTimeout(hideSearchContainer, 5000);
+        }
+
+        // Função para esconder a caixa de busca
+        function hideSearchContainer() {
+            const searchContainer = document.getElementById('search-container');
+            searchContainer.style.display = 'none';
+
+            // Limpa o temporizador
+            clearTimeout(searchTimer);
+        }
+
+        // Lógica da caixa de busca
+        document.getElementById('search-box').oninput = function (e) {
+            showSearchContainer();
+            const searchTerm = e.target.value.toLowerCase();
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '';
+            dataImages.forEach(img => {
+                if (img.name.toLowerCase().includes(searchTerm)) {
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('result-item');
+                    resultItem.innerHTML = `<img src="${img.photo_url}" alt="${img.name}"> ${img.name}`;
+                    resultItem.onclick = function () {
+                        console.log(img.slide_url);
+                        showSelectedPhoto(img.slide_url);
+                    };
+                    resultsContainer.appendChild(resultItem);
+                }
+            });
+        };
+
+        // Navegação com tecla para cima e para baixo
+        let currentIndex = 0;
+        const resultsContainer = document.getElementById('search-results');
+
+        document.onkeydown = function (e) {
+            if (document.getElementById('search-container').style.display === 'block') {
+                const resultItems = resultsContainer.getElementsByClassName('result-item');
+                if (e.key === 'ArrowUp') {
+                    // Seta para cima
+                    showSearchContainer();
+                    currentIndex = (currentIndex - 1 + resultItems.length) % resultItems.length;
+                    highlightResultItem(currentIndex, resultItems);
+                } else if (e.key === 'ArrowDown') {
+                    // Seta para baixo
+                    showSearchContainer();
+                    currentIndex = (currentIndex + 1) % resultItems.length;
+                    highlightResultItem(currentIndex, resultItems);
+                } else if (e.key === 'Enter') {
+                    // Tecla Enter
+                    const selectedResultItem = resultItems[currentIndex];
+                    if (selectedResultItem) {
+                        selectedResultItem.click();
+                    }
+                } else if (event.key === 'Escape') {
+                    // Verifica se a caixa de busca está visível
+                    const searchContainer = document.getElementById('search-container');
+                    if (searchContainer.style.display === 'block') {
+                        // Fecha a caixa de busca
+                        searchContainer.style.display = 'none';
+                    }
+                } else if (e.key === 'Backspace') {
+                    // Move o foco para a caixa de busca e posiciona o cursor no final do texto
+                    searchBox.focus();
+                    const val = searchBox.value; // Guarda o valor atual
+                    searchBox.value = ''; // Limpa o campo
+                    searchBox.value = val; // Restaura o valor para mover o cursor para o final
+                    e.preventDefault(); // Impede a ação padrão do Backspace
+                }
+            } else {
+                if (e.key === 'Enter') {
+                    document.getElementById('search-container').style.display = 'block';
+                    document.getElementById('search-box').focus();
+                    document.getElementById('search-box').value = '';
+                    fetchAndDisplayAllNames();
+                    showSearchContainer();
+                }
+            }
+        };
+
+        function fetchAndDisplayAllNames() {
+            // Esta função busca todos os nomes e os exibe no contêiner de resultados
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '';
+            dataImages.forEach(img => {
+                const resultItem = document.createElement('div');
+                resultItem.classList.add('result-item');
+                resultItem.innerHTML = `<img src="${img.photo_url}" alt="${img.name}"> ${img.name}`;
+                resultItem.onclick = function () {
+                    showSelectedPhoto(img.slide_url);
+                };
+                resultsContainer.appendChild(resultItem);
+            });
+
+            // Destacar o primeiro item da busca ao abrir
+            const resultItems = resultsContainer.getElementsByClassName('result-item');
+            if (resultItems.length > 0) {
+                resultItems[0].classList.add('highlighted');
+            }
+        }
+
+        function highlightResultItem(index, resultItems) {
+            for (let i = 0; i < resultItems.length; i++) {
+                if (i === index) {
+                    resultItems[i].classList.add('highlighted');
+                    // Rola o contêiner de resultados para mostrar o item destacado
+                    ensureVisible(resultItems[i]);
+                } else {
+                    resultItems[i].classList.remove('highlighted');
+                }
+            }
+        }
+
+        function ensureVisible(element) {
+            const offsetTop = element.offsetTop;
+            const offsetHeight = element.offsetHeight;
+            const container = document.getElementById('search-results');
+            const containerHeight = container.offsetHeight;
+            const containerScrollTop = container.scrollTop;
+
+            // Verifica se o item está acima da área visível
+            if (offsetTop < containerScrollTop) {
+                container.scrollTop = offsetTop;
+            }
+            // Verifica se o item está abaixo da área visível
+            else if (offsetTop + offsetHeight > containerScrollTop + containerHeight) {
+                container.scrollTop = offsetTop + offsetHeight - containerHeight;
+            }
+        }
+
+        function showSelectedPhoto(imageUrl) {
+            const selectedPhoto = document.getElementById('selected-photo');
+            selectedPhoto.innerHTML = `<img src="${imageUrl}" alt="Selecionado">`;
+            selectedPhoto.style.display = 'block';
+            setTimeout(() => {
+                selectedPhoto.style.display = 'none';
+                document.getElementById('search-container').style.display = 'none';
+            }, 5000); // Ocultar após 5 segundos
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchBox = document.getElementById('search-box');
+            searchBox.focus();
+        });
+
+    </script>
+</body>
+
+</html>

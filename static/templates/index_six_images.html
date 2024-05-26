@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Carrossel de Imagens</title>
+    <link rel="icon" type="image/x-icon" href="./static/images/favicon.ico">
+    <style>
+        body,
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .half {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: 50%;
+            height: 100%;
+        }
+
+        .left-half {
+            left: 0;
+            background-image: url('./static/images/bg.png');
+            background-size: auto;
+            background-repeat: repeat;
+            background-position: center;
+        }
+
+        .right-half {
+            right: 0;
+            background-color: #f8b4c3;
+        }
+
+        .carousel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .carousel img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: transparent;
+            transition: opacity 1s ease;
+            opacity: 0;
+        }
+
+        .carousel img.active {
+            opacity: 1;
+        }
+
+        #search-container {
+            display: none;
+            /* Inicia oculto */
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+        }
+
+        #search-box {
+            width: 300px;
+            padding: 5px;
+        }
+
+        #search-results {
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .result-item img {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .highlighted {
+            background-color: lightgray;
+        }
+
+        .selected-photo {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 2000;
+            height: 100vh;
+            width: 100%;
+            background-color: transparent;
+            /* Com alguma transparência */
+            text-align: center;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .selected-photo img {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="half left-half"></div>
+    <div class="half right-half"></div>
+
+    <div class="carousel" id="carousel"></div>
+
+    <div id="search-container">
+        <input type="text" id="search-box" placeholder="Digite um nome..." autocomplete="off">
+        <div id="search-results"></div>
+    </div>
+
+    <div class="selected-photo" id="selected-photo"></div>
+
+    <script>
+        let searchTimer;
+        let dataImages = [
+            {
+                "name": "Angelina Jolie",
+                "photo_url": "./static/images/foto_1-1.jpg",
+                "slide_url": "./static/images/slide_1-1.jpg"
+            },
+            {
+                "name": "Anne Hathaway",
+                "photo_url": "./static/images/foto_2-1.jpg",
+                "slide_url": "./static/images/slide_2-1.jpg"
+            },
+            {
+                "name": "Catherine Zeta-Jones",
+                "photo_url": "./static/images/foto_16-1.jpg",
+                "slide_url": "./static/images/slide_16-1.jpg"
+            },
+            {
+                "name": "Dana Davis",
+                "photo_url": "./static/images/foto_5-1.jpg",
+                "slide_url": "./static/images/slide_5-1.jpg"
+            },
+            {
+                "name": "Danai Jekesay Gurira",
+                "photo_url": "./static/images/foto_17-1.jpg",
+                "slide_url": "./static/images/slide_17-1.jpg"
+            },
+            {
+                "name": "Dilraba Dilmurat",
+                "photo_url": "./static/images/foto_18-1.jpg",
+                "slide_url": "./static/images/slide_18-1.jpg"
+            },
+            {
+                "name": "Elizabeth Taylor",
+                "photo_url": "./static/images/foto_14-1.jpg",
+                "slide_url": "./static/images/slide_14-1.jpg"
+            },
+            {
+                "name": "Emma Stone",
+                "photo_url": "./static/images/foto_12-1.jpg",
+                "slide_url": "./static/images/slide_12-1.jpg"
+            },
+            {
+                "name": "Guli Nezha",
+                "photo_url": "./static/images/foto_19-1.jpg",
+                "slide_url": "./static/images/slide_19-1.jpg"
+            },
+            {
+                "name": "Halle Berry",
+                "photo_url": "./static/images/foto_15-1.jpg",
+                "slide_url": "./static/images/slide_15-1.jpg"
+            },
+            {
+                "name": "Jennifer Lawrence",
+                "photo_url": "./static/images/foto_7-1.jpg",
+                "slide_url": "./static/images/slide_7-1.jpg"
+            },
+            {
+                "name": "Jennifer Lynn Lopez",
+                "photo_url": "./static/images/foto_22-1.jpg",
+                "slide_url": "./static/images/slide_22-1.jpg"
+            },
+            {
+                "name": "Julia Roberts",
+                "photo_url": "./static/images/foto_9-1.jpg",
+                "slide_url": "./static/images/slide_9-1.jpg"
+            },
+            {
+                "name": "Lupita Nyong'o",
+                "photo_url": "./static/images/foto_10-1.jpg",
+                "slide_url": "./static/images/slide_10-1.jpg"
+            },
+            {
+                "name": "Margot Robbie",
+                "photo_url": "./static/images/foto_3-1.jpg",
+                "slide_url": "./static/images/slide_3-1.jpg"
+            },
+            {
+                "name": "Marilyn Monroe",
+                "photo_url": "./static/images/foto_8-1.jpg",
+                "slide_url": "./static/images/slide_8-1.jpg"
+            },
+            {
+                "name": "Meryl Streep",
+                "photo_url": "./static/images/foto_13-1.jpg",
+                "slide_url": "./static/images/slide_13-1.jpg"
+            },
+            {
+                "name": "Sandra Bullock",
+                "photo_url": "./static/images/foto_4-1.jpg",
+                "slide_url": "./static/images/slide_4-1.jpg"
+            },
+            {
+                "name": "Scarlett Johansson",
+                "photo_url": "./static/images/foto_6-1.jpg",
+                "slide_url": "./static/images/slide_6-1.jpg"
+            },
+            {
+                "name": "Shaunette Renee Wilson",
+                "photo_url": "./static/images/foto_11-1.jpg",
+                "slide_url": "./static/images/slide_11-1.jpg"
+            },
+            {
+                "name": "Victoria Song",
+                "photo_url": "./static/images/foto_21-1.jpg",
+                "slide_url": "./static/images/slide_21-1.jpg"
+            },
+            {
+                "name": "Yang Mi",
+                "photo_url": "./static/images/foto_20-1.jpg",
+                "slide_url": "./static/images/slide_20-1.jpg"
+            }
+        ];
+
+        const carousel = document.getElementById('carousel');
+
+        dataImages.forEach((src, index) => {
+            const img = document.createElement('img');
+            img.src = src.slide_url;
+            if (index === 0) img.classList.add('active');
+            carousel.appendChild(img);
+        });
+
+        const images = document.querySelectorAll('.carousel img');
+        let current = 0;
+
+        function changeImage() {
+            images[current].classList.remove('active');
+            current = (current + 1) % images.length;
+            images[current].classList.add('active');
+        }
+
+        setInterval(changeImage, 3000);
+
+        // Função para mostrar a caixa de busca e iniciar o temporizador
+        function showSearchContainer() {
+            const searchContainer = document.getElementById('search-container');
+            searchContainer.style.display = 'block';
+
+            // Limpa o temporizador atual (se houver) e inicia um novo temporizador de 5 segundos
+            clearTimeout(searchTimer);
+            // Inicia o temporizador de 5 segundos
+            searchTimer = setTimeout(hideSearchContainer, 5000);
+        }
+
+        // Função para esconder a caixa de busca
+        function hideSearchContainer() {
+            const searchContainer = document.getElementById('search-container');
+            searchContainer.style.display = 'none';
+
+            // Limpa o temporizador
+            clearTimeout(searchTimer);
+        }
+
+        // Lógica da caixa de busca
+        document.getElementById('search-box').oninput = function (e) {
+            showSearchContainer();
+            const searchTerm = e.target.value.toLowerCase();
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '';
+            dataImages.forEach(img => {
+                if (img.name.toLowerCase().includes(searchTerm)) {
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('result-item');
+                    resultItem.innerHTML = `<img src="${img.photo_url}" alt="${img.name}"> ${img.name}`;
+                    resultItem.onclick = function () {
+                        console.log(img.slide_url);
+                        showSelectedPhoto(img.slide_url);
+                    };
+                    resultsContainer.appendChild(resultItem);
+                }
+            });
+        };
+
+        // Navegação com tecla para cima e para baixo
+        let currentIndex = 0;
+        const resultsContainer = document.getElementById('search-results');
+
+        document.onkeydown = function (e) {
+            if (document.getElementById('search-container').style.display === 'block') {
+                const resultItems = resultsContainer.getElementsByClassName('result-item');
+                if (e.key === 'ArrowUp') {
+                    // Seta para cima
+                    showSearchContainer();
+                    currentIndex = (currentIndex - 1 + resultItems.length) % resultItems.length;
+                    highlightResultItem(currentIndex, resultItems);
+                } else if (e.key === 'ArrowDown') {
+                    // Seta para baixo
+                    showSearchContainer();
+                    currentIndex = (currentIndex + 1) % resultItems.length;
+                    highlightResultItem(currentIndex, resultItems);
+                } else if (e.key === 'Enter') {
+                    // Tecla Enter
+                    const selectedResultItem = resultItems[currentIndex];
+                    if (selectedResultItem) {
+                        selectedResultItem.click();
+                    }
+                } else if (event.key === 'Escape') {
+                    // Verifica se a caixa de busca está visível
+                    const searchContainer = document.getElementById('search-container');
+                    if (searchContainer.style.display === 'block') {
+                        // Fecha a caixa de busca
+                        searchContainer.style.display = 'none';
+                    }
+                } else if (e.key === 'Backspace') {
+                    // Move o foco para a caixa de busca e posiciona o cursor no final do texto
+                    searchBox.focus();
+                    const val = searchBox.value; // Guarda o valor atual
+                    searchBox.value = ''; // Limpa o campo
+                    searchBox.value = val; // Restaura o valor para mover o cursor para o final
+                    e.preventDefault(); // Impede a ação padrão do Backspace
+                }
+            } else {
+                if (e.key === 'Enter') {
+                    document.getElementById('search-container').style.display = 'block';
+                    document.getElementById('search-box').focus();
+                    document.getElementById('search-box').value = '';
+                    fetchAndDisplayAllNames();
+                    showSearchContainer();
+                }
+            }
+        };
+
+        function fetchAndDisplayAllNames() {
+            // Esta função busca todos os nomes e os exibe no contêiner de resultados
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '';
+            dataImages.forEach(img => {
+                const resultItem = document.createElement('div');
+                resultItem.classList.add('result-item');
+                resultItem.innerHTML = `<img src="${img.photo_url}" alt="${img.name}"> ${img.name}`;
+                resultItem.onclick = function () {
+                    showSelectedPhoto(img.slide_url);
+                };
+                resultsContainer.appendChild(resultItem);
+            });
+
+            // Destacar o primeiro item da busca ao abrir
+            const resultItems = resultsContainer.getElementsByClassName('result-item');
+            if (resultItems.length > 0) {
+                resultItems[0].classList.add('highlighted');
+            }
+        }
+
+        function highlightResultItem(index, resultItems) {
+            for (let i = 0; i < resultItems.length; i++) {
+                if (i === index) {
+                    resultItems[i].classList.add('highlighted');
+                    // Rola o contêiner de resultados para mostrar o item destacado
+                    ensureVisible(resultItems[i]);
+                } else {
+                    resultItems[i].classList.remove('highlighted');
+                }
+            }
+        }
+
+        function ensureVisible(element) {
+            const offsetTop = element.offsetTop;
+            const offsetHeight = element.offsetHeight;
+            const container = document.getElementById('search-results');
+            const containerHeight = container.offsetHeight;
+            const containerScrollTop = container.scrollTop;
+
+            // Verifica se o item está acima da área visível
+            if (offsetTop < containerScrollTop) {
+                container.scrollTop = offsetTop;
+            }
+            // Verifica se o item está abaixo da área visível
+            else if (offsetTop + offsetHeight > containerScrollTop + containerHeight) {
+                container.scrollTop = offsetTop + offsetHeight - containerHeight;
+            }
+        }
+
+        function showSelectedPhoto(imageUrl) {
+            const selectedPhoto = document.getElementById('selected-photo');
+            selectedPhoto.innerHTML = `<img src="${imageUrl}" alt="Selecionado">`;
+            selectedPhoto.style.display = 'block';
+            setTimeout(() => {
+                selectedPhoto.style.display = 'none';
+                document.getElementById('search-container').style.display = 'none';
+            }, 5000); // Ocultar após 5 segundos
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchBox = document.getElementById('search-box');
+            searchBox.focus();
+        });
+
+
+    </script>
+
+</body>
+
+</html>
